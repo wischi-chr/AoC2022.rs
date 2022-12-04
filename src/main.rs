@@ -4,7 +4,7 @@ use std::{
     mem,
 };
 
-use crate::aoc2022::{Calories, Elf, FingerShape, Food, GameOutcome};
+use crate::aoc2022::{find_duplicate, Calories, Elf, FingerShape, Food, GameOutcome};
 
 fn main() {
     let day = get_first_arg();
@@ -19,6 +19,7 @@ fn main() {
         "1b" => day01b(&mut std_lines),
         "2a" => day02a(&mut std_lines),
         "2b" => day02b(&mut std_lines),
+        "3a" => day03a(&mut std_lines),
         x => todo!("day with code '{}' not (yet?) implemented", x),
     };
 
@@ -122,6 +123,40 @@ where
         .to_string()
 }
 
+fn day03a<I>(lines: &mut I) -> String
+where
+    I: Iterator<Item = String>,
+{
+    lines
+        .map(|x| {
+            let byte_data = x.as_bytes();
+            let len = byte_data.len();
+
+            assert!(len % 2 == 0);
+            assert!(len >= 2);
+
+            let half = len / 2;
+
+            let compartment1 = &byte_data[0..half];
+            let compartment2 = &byte_data[half..];
+
+            let positions =
+                find_duplicate(compartment1, compartment2).expect("No duplicate item found");
+
+            let item = compartment1[positions.0];
+
+            let priority = if item >= b'a' && item <= b'z' {
+                item - b'a' + 1
+            } else {
+                item - b'A' + 27
+            };
+
+            priority as i32
+        })
+        .sum::<i32>()
+        .to_string()
+}
+
 fn read_elves_from_food_list<I>(lines: &mut I) -> Vec<Elf>
 where
     I: Iterator<Item = String>,
@@ -161,6 +196,21 @@ mod aoc2022 {
     use std::cmp::Ordering;
 
     pub type Calories = u32;
+
+    pub fn find_duplicate<T>(a: &[T], b: &[T]) -> Option<(usize, usize)>
+    where
+        T: PartialEq,
+    {
+        for (a_idx, a_item) in a.iter().enumerate() {
+            for (b_idx, b_item) in b.iter().enumerate() {
+                if a_item.eq(b_item) {
+                    return Some((a_idx, b_idx));
+                }
+            }
+        }
+
+        None
+    }
 
     pub struct Food {
         calories: Calories,
