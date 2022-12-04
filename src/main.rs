@@ -1,8 +1,11 @@
 use std::{
+    collections::HashMap,
     env,
     io::{stdin, BufRead},
     mem,
 };
+
+use itertools::Itertools;
 
 use crate::aoc2022::{find_duplicate, Calories, Elf, FingerShape, Food, GameOutcome};
 
@@ -20,6 +23,7 @@ fn main() {
         "2a" => day02a(&mut std_lines),
         "2b" => day02b(&mut std_lines),
         "3a" => day03a(&mut std_lines),
+        "3b" => day03b(&mut std_lines),
         x => todo!("day with code '{}' not (yet?) implemented", x),
     };
 
@@ -143,15 +147,40 @@ where
             let positions =
                 find_duplicate(compartment1, compartment2).expect("No duplicate item found");
 
-            let item = compartment1[positions.0];
+            let item = &compartment1[positions.0];
 
-            let priority = if item >= b'a' && item <= b'z' {
-                item - b'a' + 1
-            } else {
-                item - b'A' + 27
-            };
+            get_priority_for_item(*item) as i32
+        })
+        .sum::<i32>()
+        .to_string()
+}
 
-            priority as i32
+fn get_priority_for_item(item: u8) -> u8 {
+    match item {
+        (b'a'..=b'z') => item - b'a' + 1,
+        (b'A'..=b'Z') => item - b'A' + 27,
+        _ => panic!("Unexpected item '{}'", item as char),
+    }
+}
+
+fn day03b<I>(lines: &mut I) -> String
+where
+    I: Iterator<Item = String>,
+{
+    lines
+        .chunks(3)
+        .into_iter()
+        .map(|group| {
+            let mut map = HashMap::new();
+
+            for group_member in group {
+                for b in group_member.as_bytes().iter().unique() {
+                    map.entry(*b).and_modify(|x| *x += 1).or_insert(1);
+                }
+            }
+
+            let item = *map.iter().find(|x| *x.1 == 3).unwrap().0;
+            get_priority_for_item(item) as i32
         })
         .sum::<i32>()
         .to_string()
