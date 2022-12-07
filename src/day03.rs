@@ -49,7 +49,7 @@ where
 
             let item = &compartment1[positions.0];
 
-            get_priority_for_item(*item) as i32
+            i32::from(get_priority_for_item(*item))
         })
         .sum::<i32>()
         .to_string()
@@ -72,7 +72,7 @@ where
             }
 
             let item = *map.iter().find(|x| *x.1 == 3).unwrap().0;
-            get_priority_for_item(item) as i32
+            i32::from(get_priority_for_item(item))
         })
         .sum::<i32>()
         .to_string()

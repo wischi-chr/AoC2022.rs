@@ -21,14 +21,14 @@ where
 
         let opponent_gesture = HandGesture::parse_opponent_gesture(line[0]);
 
-        score_part1 += get_score(&opponent_gesture, line[2], PuzzlePart::Part1);
-        score_part2 += get_score(&opponent_gesture, line[2], PuzzlePart::Part2);
+        score_part1 += get_score(opponent_gesture, line[2], PuzzlePart::Part1);
+        score_part2 += get_score(opponent_gesture, line[2], PuzzlePart::Part2);
     }
 
     (score_part1.to_string(), score_part2.to_string())
 }
 
-fn get_score(opponent_gesture: &HandGesture, my_code: u8, part: PuzzlePart) -> i32 {
+fn get_score(opponent_gesture: HandGesture, my_code: u8, part: PuzzlePart) -> i32 {
     let (mine, outcome) = match part {
         PuzzlePart::Part1 => {
             let g = HandGesture::parse_my_gesture_part1(my_code);
@@ -79,7 +79,7 @@ impl HandGesture {
             b'A' => Self::Rock,
             b'B' => Self::Paper,
             b'C' => Self::Scissors,
-            _ => panic!("Invalid code for opponent shape: '{}'.", c),
+            _ => panic!("Invalid code for opponent shape: '{c}'."),
         }
     }
 
@@ -88,11 +88,11 @@ impl HandGesture {
             b'X' => Self::Rock,
             b'Y' => Self::Paper,
             b'Z' => Self::Scissors,
-            _ => panic!("Invalid code for my shape: '{}'.", c),
+            _ => panic!("Invalid code for my shape: '{c}'."),
         }
     }
 
-    pub fn play(&self, other: &HandGesture) -> GameOutcome {
+    pub const fn play(self, other: Self) -> GameOutcome {
         match self {
             Self::Paper => match other {
                 Self::Paper => GameOutcome::Draw,
@@ -112,19 +112,19 @@ impl HandGesture {
         }
     }
 
-    pub fn get_my_shape(opponent: &Self, desired_outcome: GameOutcome) -> HandGesture {
+    pub const fn get_my_shape(opponent: Self, desired_outcome: GameOutcome) -> Self {
         match desired_outcome {
             GameOutcome::Lose => match opponent {
-                HandGesture::Paper => HandGesture::Rock,
-                HandGesture::Rock => HandGesture::Scissors,
-                HandGesture::Scissors => HandGesture::Paper,
+                Self::Paper => Self::Rock,
+                Self::Rock => Self::Scissors,
+                Self::Scissors => Self::Paper,
             },
             GameOutcome::Win => match opponent {
-                HandGesture::Paper => HandGesture::Scissors,
-                HandGesture::Rock => HandGesture::Paper,
-                HandGesture::Scissors => HandGesture::Rock,
+                Self::Paper => Self::Scissors,
+                Self::Rock => Self::Paper,
+                Self::Scissors => Self::Rock,
             },
-            GameOutcome::Draw => *opponent,
+            GameOutcome::Draw => opponent,
         }
     }
 }
@@ -135,7 +135,7 @@ impl GameOutcome {
             b'X' => Self::Lose,
             b'Y' => Self::Draw,
             b'Z' => Self::Win,
-            _ => panic!("Invalid code for outcome: '{}'.", c),
+            _ => panic!("Invalid code for outcome: '{c}'."),
         }
     }
 }

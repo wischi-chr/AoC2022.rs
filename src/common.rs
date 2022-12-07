@@ -22,7 +22,7 @@ where
         match self.iter.next() {
             Some(byte) => {
                 if byte == b'\r' {
-                    if let Some(b'\n') = self.iter.peek() {
+                    if self.iter.peek() == Some(&b'\n') {
                         self.iter.next();
                     }
                     Some(b'\n')
@@ -50,8 +50,7 @@ pub trait NormalizeLineBreaks {
     /// Implements the ability to drop `\r\n` byte pairs from a stream, converting each instance to a single `\n`.
     fn normalize_line_breaks(self) -> LineBreakNormalizer<Self>
     where
-        Self: Sized,
-        Self: Iterator<Item = u8>;
+        Self: Sized + Iterator<Item = u8>;
 }
 
 impl<I> NormalizeLineBreaks for I
@@ -66,8 +65,7 @@ where
 pub trait LineSplittable {
     fn split_lf_line_breaks(self) -> LineSplitter<Self>
     where
-        Self: Sized,
-        Self: Iterator<Item = u8>;
+        Self: Sized + Iterator<Item = u8>;
 }
 
 impl<I> LineSplittable for I
@@ -96,8 +94,7 @@ where
 pub trait LfEofDropable {
     fn drop_lf_eof(self) -> LfEofDropper<Self>
     where
-        Self: Sized,
-        Self: Iterator<Item = Vec<u8>>;
+        Self: Sized + Iterator<Item = Vec<u8>>;
 }
 
 pub struct LfEofDropper<I>
@@ -117,7 +114,7 @@ where
         let item = self.iter.next();
 
         if let Some(x) = &item {
-            if x.len() == 0 && self.iter.peek() == None {
+            if x.is_empty() && self.iter.peek().is_none() {
                 // the current element is empty (zero length vector)
                 // and the last element so we drop it and directly return None.
                 return None;

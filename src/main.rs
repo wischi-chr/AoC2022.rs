@@ -3,6 +3,7 @@ mod common;
 mod day01;
 mod day02;
 mod day03;
+mod day04;
 
 use std::{
     env,
@@ -21,9 +22,7 @@ fn main() {
         "1" => day01::solve(&mut std_bytes),
         "2" => day02::solve(&mut std_bytes),
         "3" => day03::solve(&mut std_bytes),
-        // "2b" => day02b(&mut std_lines),
-        // "3a" => day03a(&mut std_lines),
-        // "3b" => day03b(&mut std_lines),
+        "4" => day04::solve(&mut std_bytes),
         x => todo!("day with code '{}' not (yet?) implemented", x),
     };
 
