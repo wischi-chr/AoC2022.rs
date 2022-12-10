@@ -1,62 +1,61 @@
 use crate::{
-    aoc_general::PuzzlePart,
+    aoc_general::{PuzzlePart, PuzzleSolver},
     common::{LfEofDropable, LineSplittable, NormalizeLineBreaks},
 };
 
-pub fn solve<I>(input: &mut I) -> (String, String)
-where
-    I: Iterator<Item = u8>,
-{
-    let lines = input
-        .normalize_line_breaks()
-        .split_lf_line_breaks()
-        .drop_lf_eof();
+#[derive(Default)]
+pub struct Day2;
 
-    let mut score_part1 = 0;
-    let mut score_part2 = 0;
+impl PuzzleSolver for Day2 {
+    fn solve(&self, input: &mut dyn Iterator<Item = u8>, part: PuzzlePart) -> String {
+        let lines = input
+            .normalize_line_breaks()
+            .split_lf_line_breaks()
+            .drop_lf_eof();
 
-    for line in lines {
-        assert!(line.len() == 3);
-        assert!(line[1] == b' ');
+        let mut score = 0;
 
-        let opponent_gesture = HandGesture::parse_opponent_gesture(line[0]);
+        for line in lines {
+            assert!(line.len() == 3);
+            assert!(line[1] == b' ');
 
-        score_part1 += get_score(opponent_gesture, line[2], PuzzlePart::Part1);
-        score_part2 += get_score(opponent_gesture, line[2], PuzzlePart::Part2);
+            let first_code = line[0];
+            let second_code = line[2];
+
+            let opponent_gesture = HandGesture::parse_opponent_gesture(first_code);
+
+            let (mine, outcome) = match part {
+                PuzzlePart::Part1 => {
+                    let g = HandGesture::parse_my_gesture_part1(second_code);
+                    let o = g.play(opponent_gesture);
+
+                    (g, o)
+                }
+                PuzzlePart::Part2 => {
+                    let o = GameOutcome::parse_outcome_part2(second_code);
+                    let g = HandGesture::get_my_shape(opponent_gesture, o);
+
+                    (g, o)
+                }
+            };
+
+            let shape_score = match mine {
+                HandGesture::Rock => 1,
+                HandGesture::Paper => 2,
+                HandGesture::Scissors => 3,
+            };
+
+            let outcome_score = match outcome {
+                GameOutcome::Lose => 0,
+                GameOutcome::Draw => 3,
+                GameOutcome::Win => 6,
+            };
+
+            score += outcome_score + shape_score
+        }
+
+        score.to_string()
     }
-
-    (score_part1.to_string(), score_part2.to_string())
-}
-
-fn get_score(opponent_gesture: HandGesture, my_code: u8, part: PuzzlePart) -> i32 {
-    let (mine, outcome) = match part {
-        PuzzlePart::Part1 => {
-            let g = HandGesture::parse_my_gesture_part1(my_code);
-            let o = g.play(opponent_gesture);
-
-            (g, o)
-        }
-        PuzzlePart::Part2 => {
-            let o = GameOutcome::parse_outcome_part2(my_code);
-            let g = HandGesture::get_my_shape(opponent_gesture, o);
-
-            (g, o)
-        }
-    };
-
-    let shape_score = match mine {
-        HandGesture::Rock => 1,
-        HandGesture::Paper => 2,
-        HandGesture::Scissors => 3,
-    };
-
-    let outcome_score = match outcome {
-        GameOutcome::Lose => 0,
-        GameOutcome::Draw => 3,
-        GameOutcome::Win => 6,
-    };
-
-    outcome_score + shape_score
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

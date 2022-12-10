@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{iter::Peekable, str::FromStr};
 
 pub struct LineBreakNormalizer<I>
 where
@@ -122,6 +122,13 @@ where
         }
 
         item
+    }
+}
+
+pub fn parse<T: FromStr>(data: &[u8]) -> T {
+    match std::str::from_utf8(data).unwrap().parse::<T>() {
+        Err(_) => panic!("Failed to parse data"),
+        Ok(x) => x,
     }
 }
 

@@ -1,30 +1,33 @@
-use crate::common::{LfEofDropable, LineSplittable, NormalizeLineBreaks};
+use crate::{
+    aoc_general::{PuzzlePart, PuzzleSolver},
+    common::{parse, LfEofDropable, LineSplittable, NormalizeLineBreaks},
+};
 
-pub fn solve<I>(input: &mut I) -> (String, String)
-where
-    I: Iterator<Item = u8>,
-{
-    let lines = input
-        .normalize_line_breaks()
-        .split_lf_line_breaks()
-        .drop_lf_eof();
+#[derive(Default)]
+pub struct Day4;
 
-    let mut contains_count = 0;
-    let mut overlap_count = 0;
+impl PuzzleSolver for Day4 {
+    fn solve(&self, input: &mut dyn Iterator<Item = u8>, part: PuzzlePart) -> String {
+        let lines = input
+            .normalize_line_breaks()
+            .split_lf_line_breaks()
+            .drop_lf_eof();
 
-    for line in lines {
-        let (a, b) = parse_double_range(&line);
+        let mut count = 0;
 
-        if Range::one_contains_other(&a, &b) {
-            contains_count += 1;
+        for line in lines {
+            let (a, b) = parse_double_range(&line);
+
+            if match part {
+                PuzzlePart::Part1 => Range::one_contains_other(&a, &b),
+                PuzzlePart::Part2 => a.overlaps_with(&b),
+            } {
+                count += 1;
+            }
         }
 
-        if a.overlaps_with(&b) {
-            overlap_count += 1;
-        }
+        count.to_string()
     }
-
-    (contains_count.to_string(), overlap_count.to_string())
 }
 
 fn parse_double_range(data: &[u8]) -> (Range, Range) {
@@ -36,16 +39,9 @@ fn parse_range(data: &[u8]) -> Range {
     let (a, b) = split(b'-', data);
 
     Range {
-        start: parse_integer(a),
-        end: parse_integer(b),
+        start: parse(a),
+        end: parse(b),
     }
-}
-
-fn parse_integer(data: &[u8]) -> i32 {
-    std::str::from_utf8(data)
-        .expect("data should be valid ASCII")
-        .parse::<i32>()
-        .expect("data should be a valid integer")
 }
 
 fn split(delimiter: u8, data: &[u8]) -> (&[u8], &[u8]) {

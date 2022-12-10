@@ -2,22 +2,26 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
-use crate::common::{LfEofDropable, LineSplittable, NormalizeLineBreaks};
+use crate::{
+    aoc_general::{PuzzlePart, PuzzleSolver},
+    common::{LfEofDropable, LineSplittable, NormalizeLineBreaks},
+};
 
-pub fn solve<I>(input: &mut I) -> (String, String)
-where
-    I: Iterator<Item = u8>,
-{
-    let lines: Vec<_> = input
-        .normalize_line_breaks()
-        .split_lf_line_breaks()
-        .drop_lf_eof()
-        .collect();
+#[derive(Default)]
+pub struct Day3;
 
-    (
-        day03_part1(&mut lines.iter()),
-        day03_part2(&mut lines.iter()),
-    )
+impl PuzzleSolver for Day3 {
+    fn solve(&self, input: &mut dyn Iterator<Item = u8>, part: PuzzlePart) -> String {
+        let mut lines = input
+            .normalize_line_breaks()
+            .split_lf_line_breaks()
+            .drop_lf_eof();
+
+        match part {
+            PuzzlePart::Part1 => day03_part1(&mut lines),
+            PuzzlePart::Part2 => day03_part2(&mut lines),
+        }
+    }
 }
 
 fn get_priority_for_item(item: u8) -> u8 {
@@ -28,9 +32,9 @@ fn get_priority_for_item(item: u8) -> u8 {
     }
 }
 
-fn day03_part1<'a, I>(lines: &'a mut I) -> String
+fn day03_part1<I>(lines: &mut I) -> String
 where
-    I: Iterator<Item = &'a Vec<u8>>,
+    I: Iterator<Item = Vec<u8>>,
 {
     lines
         .map(|x| {
@@ -55,9 +59,9 @@ where
         .to_string()
 }
 
-fn day03_part2<'a, I>(lines: &'a mut I) -> String
+fn day03_part2<I>(lines: &mut I) -> String
 where
-    I: Iterator<Item = &'a Vec<u8>>,
+    I: Iterator<Item = Vec<u8>>,
 {
     lines
         .chunks(3)
