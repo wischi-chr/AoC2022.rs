@@ -1,5 +1,10 @@
 use std::{iter::Peekable, str::FromStr};
 
+use num::{
+    traits::ops::overflowing::{OverflowingAdd, OverflowingSub},
+    Integer,
+};
+
 pub struct LineBreakNormalizer<I>
 where
     I: Iterator<Item = u8>,
@@ -125,6 +130,89 @@ where
     }
 }
 
+pub struct RangeIteratorInclusive<T> {
+    start: T,
+    stop: T,
+    step: T,
+    current: Option<T>,
+}
+
+impl<T> Iterator for RangeIteratorInclusive<T>
+where
+    T: OverflowingAdd + Copy + PartialEq,
+{
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current {
+            None => {
+                self.current = Some(self.start);
+                self.current
+            }
+            Some(c) => {
+                if c == self.stop {
+                    None
+                } else {
+                    // Note: this iterator does negative steps by overflow adding "very large" positive values
+                    let (next, _) = c.overflowing_add(&self.step);
+                    self.current = Some(next);
+                    self.current
+                }
+            }
+        }
+    }
+}
+
+impl<T> RangeIteratorInclusive<T>
+where
+    T: Copy,
+{
+    /// Note that step MUST NOT be negative or zero (will return None).
+    pub fn new(start: T, stop: T, step: T) -> Option<Self>
+    where
+        T: OverflowingSub + Integer,
+    {
+        if step <= T::zero() {
+            return None;
+        }
+
+        let decrement = start > stop;
+
+        let distance = if decrement {
+            start - stop
+        } else {
+            stop - start
+        };
+
+        let step_count = distance.div_floor(&step);
+        let normalized_distance = step_count * step;
+
+        // the "normalized_stop" describes the last value the iterator lands exactly.
+        // for example it the consumer calls this function like so: new(1, 11, 4)
+        // the output will be 1, 5, 9 and the last value (in this case 9) is the normalized_stop value
+        // we do that so simplify the implementation of next()
+
+        let normalized_stop = if decrement {
+            start - normalized_distance
+        } else {
+            start + normalized_distance
+        };
+
+        let mut step = step;
+
+        if decrement {
+            (step, _) = T::zero().overflowing_sub(&step);
+        }
+
+        Some(Self {
+            current: None,
+            start,
+            stop: normalized_stop,
+            step,
+        })
+    }
+}
+
 pub fn parse<T: FromStr>(data: &[u8]) -> T {
     match std::str::from_utf8(data).unwrap().parse::<T>() {
         Err(_) => panic!("Failed to parse data"),
@@ -173,7 +261,77 @@ mod tests {
     use crate::common::{LfEofDropable, NormalizeLineBreaks};
     use std::io::{Cursor, Read};
 
-    use super::LineSplittable;
+    use super::{LineSplittable, RangeIteratorInclusive};
+
+    #[test]
+    fn range_iterator_works_for_trivial_cases() {
+        let expected = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let observed = RangeIteratorInclusive::new(1, 9, 1)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_works_if_step_doesnt_hit_the_stop_value_exactly() {
+        let expected = vec![1, 5, 9];
+        let observed = RangeIteratorInclusive::new(1, 12, 4)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_works_for_large_positive_steps_in_u32() {
+        let expected: Vec<u32> = vec![0, u32::MAX];
+        let observed = RangeIteratorInclusive::new(0u32, u32::MAX, u32::MAX)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_works_for_large_negative_steps_in_u32() {
+        let expected: Vec<u32> = vec![u32::MAX, 0];
+        let observed = RangeIteratorInclusive::new(u32::MAX, 0u32, u32::MAX)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_works_when_passing_though_zero() {
+        let expected = vec![-7, -4, -1, 2, 5];
+        let observed = RangeIteratorInclusive::new(-7, 7, 3)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_can_walk_backwards() {
+        let expected = vec![5, 4, 3, 2, 1];
+        let observed = RangeIteratorInclusive::new(5, 1, 1)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
+
+    #[test]
+    fn range_iterator_can_walk_backwards_u8() {
+        let expected: Vec<u8> = vec![5, 4, 3, 2, 1];
+        let observed = RangeIteratorInclusive::new(5u8, 1u8, 1u8)
+            .unwrap()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected, observed);
+    }
 
     #[test]
     fn normalizing_line_breaks_work() {

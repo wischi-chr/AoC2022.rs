@@ -49,6 +49,8 @@ fn main() {
         "6b" => (6, PuzzlePart::Part2),
         "7a" => (7, PuzzlePart::Part1),
         "7b" => (7, PuzzlePart::Part2),
+        "8a" => (8, PuzzlePart::Part1),
+        "8b" => (8, PuzzlePart::Part2),
         x => todo!("day with code '{}' not (yet?) implemented", x),
     };
 
